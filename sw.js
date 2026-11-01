@@ -1,5 +1,5 @@
 // Service worker: deixa o app funcionar offline (cache dos arquivos do app).
-const VERSAO = 'contas-v3';
+const VERSAO = 'contas-v4';
 const ARQUIVOS = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
   'fonts/Poppins-Regular.ttf', 'fonts/Poppins-SemiBold.ttf', 'fonts/Poppins-Bold.ttf',
@@ -18,17 +18,14 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Responde do cache e atualiza em segundo plano (a versão nova aparece na abertura seguinte)
+// Rede primeiro (a versão nova aparece logo); sem internet, usa o que está no cache
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then((hit) => {
-      const rede = fetch(req).then((res) => {
-        if (res.ok) caches.open(VERSAO).then((c) => c.put(req, res.clone()));
-        return res;
-      }).catch(() => hit);
-      return hit || rede;
-    })
+    fetch(req).then((res) => {
+      if (res.ok) { const copia = res.clone(); caches.open(VERSAO).then((c) => c.put(req, copia)); }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });
