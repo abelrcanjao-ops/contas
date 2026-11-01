@@ -1,5 +1,5 @@
 // Service worker: deixa o app funcionar offline (cache dos arquivos do app).
-const VERSAO = 'contas-v1';
+const VERSAO = 'contas-v2';
 const ARQUIVOS = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
   'fonts/Poppins-Regular.ttf', 'fonts/Poppins-SemiBold.ttf', 'fonts/Poppins-Bold.ttf',
