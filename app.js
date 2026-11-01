@@ -122,7 +122,7 @@ function opcoes(msg, rotulos, acoes) {
     rotulos.forEach((r, i) => {
       const cancelar = i === rotulos.length - 1;
       col.append(h('button', {
-        class: 'btn med ' + (cancelar ? 'cinza' : 'perigo'),
+        class: 'btn grande ' + (cancelar ? 'cinza' : 'perigo'),
         onclick: () => { fechar(); if (acoes[i]) acoes[i](); },
       }, r));
     });

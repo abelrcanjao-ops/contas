@@ -117,7 +117,7 @@ input { font: inherit; }
 /* prévia do valor no formulário */
 .previa { margin-top: 6px; font-weight: 700; color: #2E7D32; }
 :root[data-theme="dark"] .previa { color: #69F0AE; }
-.dlg .coluna { }
+
 
 /* seletor de mês/ano */
 .seletor { display: flex; align-items: center; background: var(--campo); border-radius: 12px; margin-top: 4px; }
@@ -147,3 +147,7 @@ input { font: inherit; }
   .folha { margin: 0; padding: 0; box-shadow: none; border-radius: 0; }
   @page { size: A4; margin: 16mm; }
 }
+
+/* botões grandes dos avisos de confirmação (apagar / cancelar), fáceis de tocar */
+.btn.grande { height: 64px; border-radius: 32px; font-size: 17px; }
+.dlg .coluna { gap: 14px; }
