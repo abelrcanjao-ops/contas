@@ -1,5 +1,5 @@
 // Service worker: deixa o app funcionar offline (cache dos arquivos do app).
-const VERSAO = 'contas-v4';
+const VERSAO = 'contas-v5';
 const ARQUIVOS = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
   'fonts/Poppins-Regular.ttf', 'fonts/Poppins-SemiBold.ttf', 'fonts/Poppins-Bold.ttf',
@@ -22,8 +22,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  if (req.url.includes('version.json')) return; // sempre direto da rede
   e.respondWith(
-    fetch(req).then((res) => {
+    fetch(req, { cache: 'no-cache' }).then((res) => {
       if (res.ok) { const copia = res.clone(); caches.open(VERSAO).then((c) => c.put(req, copia)); }
       return res;
     }).catch(() => caches.match(req, { ignoreSearch: true }))

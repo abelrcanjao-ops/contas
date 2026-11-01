@@ -1,6 +1,9 @@
 'use strict';
 /* Contas — controle de despesas por mês (PWA). Dados salvos só neste aparelho (localStorage). */
 
+// Versão do app: mudar aqui e em version.json a cada publicação
+const VERSAO_APP = '5';
+
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 // Paletas (mesmas do app Android)
@@ -530,7 +533,9 @@ function renderConfig() {
       h('button', {
         class: 'btn',
         onclick: () => { db.config = Object.assign({}, PADRAO); salvar(); aplicarTema(); renderConfig(); },
-      }, 'Restaurar Padrão')),
+      }, 'Restaurar Padrão'),
+      h('button', { class: 'btn cinza', onclick: () => atualizarApp(true) }, 'Atualizar o App')),
+    h('div', { class: 'versao' }, `Versão ${VERSAO_APP}`),
     h('div', { class: 'fundo-pagina' }),
   );
 }
@@ -816,6 +821,30 @@ async function salvarPdf(r) {
   }
   baixar(arq, nome);
 }
+
+/* ---------- atualização do app ---------- */
+
+// Apaga os arquivos guardados e recarrega, para trazer a versão mais nova. Os dados das
+// despesas (localStorage) não são tocados.
+async function atualizarApp(avisar) {
+  try {
+    if ('serviceWorker' in navigator) (await navigator.serviceWorker.getRegistrations()).forEach((r) => r.unregister());
+    if (window.caches) (await caches.keys()).forEach((k) => caches.delete(k));
+  } catch (e) { /* segue mesmo assim */ }
+  if (avisar) aviso('Atualizando…');
+  setTimeout(() => location.reload(), avisar ? 400 : 0);
+}
+
+// Se o servidor já tem uma versão mais nova do que a que está rodando, atualiza sozinho (uma vez)
+fetch('version.json?' + Date.now(), { cache: 'no-store' })
+  .then((r) => r.json())
+  .then((d) => {
+    if (d && d.v && d.v !== VERSAO_APP && sessionStorage.getItem('contas.tentou') !== d.v) {
+      sessionStorage.setItem('contas.tentou', d.v);
+      atualizarApp(false);
+    }
+  })
+  .catch(() => {});
 
 /* ---------- início ---------- */
 
