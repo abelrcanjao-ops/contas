@@ -1,19 +1,17 @@
 'use strict';
-/* Contas — controle de despesas por mês (PWA). Dados salvos só neste aparelho (localStorage). */
+/* Contas — controle de despesas por mês (PWA, visual iOS). Dados salvos só neste aparelho (localStorage). */
 
 // Versão do app: mudar aqui e em version.json a cada publicação
-const VERSAO_APP = '5';
+const VERSAO_APP = '6';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
-// Paletas (mesmas do app Android)
+// Paletas. A primeira de cada lista usa as cores de sistema do iOS.
 const PAL = {
-  apagar: [['#FF6F61', '#D32F2F', '#9F1212'], ['#FFB74D', '#F57C00', '#BF360C'], ['#F48FB1', '#D81B60', '#880E4F'], ['#BA68C8', '#7B1FA2', '#4A148C'], ['#90A4AE', '#546E7A', '#263238']],
-  pago: [['#7BD07F', '#2E9B4B', '#1B6B34'], ['#64B5F6', '#1976D2', '#0D47A1'], ['#4DD0E1', '#00897B', '#004D40'], ['#DCE775', '#7CB342', '#33691E'], ['#7986CB', '#3949AB', '#1A237E']],
-  botao: [['#F06292', '#AD1457'], ['#BA68C8', '#6A1B9A'], ['#64B5F6', '#1565C0'], ['#FFB74D', '#E65100'], ['#90A4AE', '#37474F']],
+  apagar: [['#FF6B62', '#FF3B30', '#D92B20'], ['#FFB340', '#FF9500', '#C93400'], ['#FF7AA8', '#FF2D55', '#C20E3A'], ['#C77DFF', '#AF52DE', '#7B2EA8'], ['#98989D', '#636366', '#3A3A3C']],
+  pago: [['#5FDB7F', '#34C759', '#248A3D'], ['#5AB8FF', '#007AFF', '#0A4FB5'], ['#5AD6D2', '#30B0C7', '#1F7A8C'], ['#A6E05A', '#7CB342', '#4A7A1F'], ['#7D7AFF', '#5856D6', '#3634A3']],
+  botao: [['#3D9AFF', '#007AFF'], ['#C77DFF', '#8E3FD1'], ['#FF6B62', '#FF3B30'], ['#FFB340', '#FF9500'], ['#98989D', '#48484A']],
 };
-const TOPO_CLARO = ['#1A237E', '#6A1B9A', '#AD1457'];
-const TOPO_ESCURO = ['#0D1245', '#38105A', '#7A0E40'];
 
 /* ---------- utilitários ---------- */
 
@@ -30,6 +28,11 @@ function h(tag, attrs, ...filhos) {
   }
   return e;
 }
+const icone = (svg) => { const e = h('span', { class: 'icone' }); e.innerHTML = svg; return e; };
+
+const CHEV_E = '<svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CHEV_D = '<svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M2 2l8 8-8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const RETICENCIAS = '<svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="14" r="1.8" fill="currentColor"/><circle cx="14" cy="14" r="1.8" fill="currentColor"/><circle cx="19" cy="14" r="1.8" fill="currentColor"/></svg>';
 
 const nf = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const moedaFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -62,13 +65,18 @@ function aviso(txt) {
 /* ---------- dados ---------- */
 
 const STORE = 'contas.v1';
-const PADRAO = { escuro: false, apagar: 0, pago: 0, botao: 0 };
+const PADRAO = { tema: 'auto', apagar: 0, pago: 0, botao: 0 };
 let db = lerDb();
 
 function lerDb() {
   try {
     const d = JSON.parse(localStorage.getItem(STORE));
-    if (d && typeof d.meses === 'object') return { meses: d.meses, config: Object.assign({}, PADRAO, d.config) };
+    if (d && typeof d.meses === 'object') {
+      const config = Object.assign({}, PADRAO, d.config);
+      if (!d.config || !d.config.tema) config.tema = d.config && d.config.escuro ? 'escuro' : 'auto'; // versões antigas
+      delete config.escuro;
+      return { meses: d.meses, config };
+    }
   } catch (e) { /* vazio ou indisponível */ }
   return { meses: {}, config: Object.assign({}, PADRAO) };
 }
@@ -87,114 +95,122 @@ const temComum = (l) => (l || []).some((i) => !i.g);
 const novoItem = (extra) => Object.assign({ n: '', v: '', p: false }, extra);
 const porValor = (x, y) => parse(y.v) - parse(x.v); // do mais caro para o mais barato (sort é estável)
 
-/* ---------- tema ---------- */
+/* ---------- tema (segue o sistema, ou força claro/escuro) ---------- */
 
 const grad = (cores, dir = '90deg') => `linear-gradient(${dir}, ${cores.join(', ')})`;
+const escuroSistema = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const temaEscuro = () => db.config.tema === 'escuro' || (db.config.tema === 'auto' && !!escuroSistema && escuroSistema.matches);
 
 function aplicarTema() {
   const c = db.config;
   const r = document.documentElement;
-  r.dataset.theme = c.escuro ? 'dark' : 'light';
+  const escuro = temaEscuro();
+  r.dataset.theme = escuro ? 'dark' : 'light';
   r.style.setProperty('--ap', grad(PAL.apagar[c.apagar]));
   r.style.setProperty('--pg', grad(PAL.pago[c.pago]));
   r.style.setProperty('--bt', grad(PAL.botao[c.botao]));
   const meta = document.querySelector('meta[name=theme-color]');
-  if (meta) meta.content = (c.escuro ? TOPO_ESCURO : TOPO_CLARO)[0];
+  if (meta) meta.content = escuro ? '#000000' : '#F2F2F7';
 }
+if (escuroSistema && escuroSistema.addEventListener) escuroSistema.addEventListener('change', () => { if (db.config.tema === 'auto') aplicarTema(); });
 
-/* ---------- diálogos ---------- */
+/* ---------- componentes iOS: folha (sheet) e menu de ações (action sheet) ---------- */
 
-function modal(montar) {
-  const ov = h('div', { class: 'overlay' });
-  const box = h('div', { class: 'dlg' });
-  ov.append(box);
+// Folha que sobe de baixo, com "Cancelar" à esquerda e a ação principal à direita.
+function folha(titulo, rotuloOk, montar, aoOk) {
+  const ov = h('div', { class: 'ov sheet-ov' });
+  const box = h('div', { class: 'sheet' });
   const fechar = () => ov.remove();
-  montar(box, fechar);
+  const corpo = h('div', { class: 'sheet-corpo' });
+  box.append(
+    h('div', { class: 'grabber' }),
+    h('div', { class: 'sheet-nav' },
+      h('button', { class: 'nav-txt', onclick: fechar }, 'Cancelar'),
+      h('div', { class: 't' }, titulo),
+      h('button', { class: 'nav-txt forte', onclick: () => { if (aoOk() !== false) fechar(); } }, rotuloOk)),
+    corpo);
+  montar(corpo, fechar);
+  ov.append(box);
   document.body.append(ov);
   // foco direto (dentro do toque do usuário) para o teclado abrir também no iPhone
-  const f = box.querySelector('[data-foco]');
+  const f = corpo.querySelector('[data-foco]');
   if (f) f.focus();
   return fechar;
 }
 
-// Pergunta com várias opções; a última é "cancelar".
+// Menu de ações na parte de baixo; a última opção é "Cancelar". Tocar fora também cancela.
 function opcoes(msg, rotulos, acoes) {
-  modal((box, fechar) => {
-    box.append(h('p', null, msg));
-    const col = h('div', { class: 'coluna' });
-    rotulos.forEach((r, i) => {
-      const cancelar = i === rotulos.length - 1;
-      col.append(h('button', {
-        class: 'btn grande ' + (cancelar ? 'cinza' : 'perigo'),
-        onclick: () => { fechar(); if (acoes[i]) acoes[i](); },
-      }, r));
-    });
-    box.append(col);
+  const ov = h('div', { class: 'ov as-ov' });
+  const fechar = () => ov.remove();
+  ov.addEventListener('click', (e) => { if (e.target === ov) fechar(); });
+  const grupoAcoes = h('div', { class: 'as-grupo' }, h('div', { class: 'as-msg' }, msg));
+  rotulos.slice(0, -1).forEach((r, i) => {
+    grupoAcoes.append(h('button', { class: 'as-btn destrutivo', onclick: () => { fechar(); if (acoes[i]) acoes[i](); } }, r));
   });
+  const ultimo = rotulos.length - 1;
+  ov.append(h('div', { class: 'as' }, grupoAcoes,
+    h('button', { class: 'as-btn cancelar', onclick: () => { fechar(); if (acoes[ultimo]) acoes[ultimo](); } }, rotulos[ultimo])));
+  document.body.append(ov);
 }
+
+const grupo = (...linhas) => h('div', { class: 'grupo' }, ...linhas);
+const lin = (rotulo, controle) => h('label', { class: 'lin' }, h('span', { class: 'rot' }, rotulo), controle);
+const rodape = (...c) => h('div', { class: 'rodape' }, ...c);
 
 /* ---------- criar, editar e apagar despesas ---------- */
 
 // Formulário de despesa: nova (editar == undefined) ou edição de uma existente.
 function formulario(editar) {
   const edicao = !!editar;
-  modal((box, fechar) => {
-    const nome = h('input', { type: 'text', placeholder: 'Ex.: Cartão', autocapitalize: 'words', autocomplete: 'off', 'data-foco': '1' });
-    const valor = h('input', { type: 'text', inputmode: 'decimal', placeholder: 'Ex.: 963,50', autocomplete: 'off' });
-    const previa = h('div', { class: 'previa' });
-    const parc = h('input', { type: 'tel', inputmode: 'numeric', placeholder: 'Ex.: 12', autocomplete: 'off' });
-    const ini = h('input', { type: 'tel', inputmode: 'numeric', placeholder: '1', autocomplete: 'off', value: '1' });
-    const grupoIni = h('div', null, h('label', null, edicao ? 'Parcela Atual' : 'Começa na Parcela'), ini);
+  const nome = h('input', { type: 'text', placeholder: 'Ex.: Cartão', autocapitalize: 'words', autocomplete: 'off', 'data-foco': '1' });
+  const valor = h('input', { type: 'text', inputmode: 'decimal', placeholder: 'Ex.: 963,50', autocomplete: 'off' });
+  const previa = h('div', { class: 'previa' });
+  const parc = h('input', { type: 'tel', inputmode: 'numeric', placeholder: 'Opcional', autocomplete: 'off' });
+  const ini = h('input', { type: 'tel', inputmode: 'numeric', placeholder: '1', autocomplete: 'off', value: '1' });
+  const linIni = lin(edicao ? 'Parcela Atual' : 'Começa na Parcela', ini);
 
-    // O valor é digitado em reais; a prévia mostra exatamente como será salvo
-    let val = '';
-    const atualizar = () => {
-      const c = centavosDe(valor.value);
-      val = canonico(c);
-      previa.textContent = '= ' + moeda(c / 100);
-    };
-    valor.addEventListener('input', atualizar);
-    valor.addEventListener('blur', () => { const c = centavosDe(valor.value); valor.value = c ? nf.format(c / 100) : ''; atualizar(); });
-    const mostrarIni = () => { grupoIni.style.display = inteiro(parc.value) >= 2 ? 'block' : 'none'; };
-    parc.addEventListener('input', mostrarIni);
+  // O valor é digitado em reais; a prévia mostra exatamente como será salvo
+  let val = '';
+  const atualizar = () => {
+    const c = centavosDe(valor.value);
+    val = canonico(c);
+    previa.textContent = '= ' + moeda(c / 100);
+  };
+  valor.addEventListener('input', atualizar);
+  valor.addEventListener('blur', () => { const c = centavosDe(valor.value); valor.value = c ? nf.format(c / 100) : ''; atualizar(); });
+  const mostrarIni = () => { linIni.style.display = inteiro(parc.value) >= 2 ? 'flex' : 'none'; };
+  parc.addEventListener('input', mostrarIni);
 
-    if (edicao) {
-      nome.value = editar.n;
-      const v0 = parse(editar.v);
-      valor.value = v0 > 0 ? nf.format(v0) : '';
-      if (editar.pt >= 2) { parc.value = String(editar.pt); ini.value = String(editar.pc); }
-    }
-    atualizar();
-    mostrarIni();
+  if (edicao) {
+    nome.value = editar.n;
+    const v0 = parse(editar.v);
+    valor.value = v0 > 0 ? nf.format(v0) : '';
+    if (editar.pt >= 2) { parc.value = String(editar.pt); ini.value = String(editar.pc); }
+  }
+  atualizar();
+  mostrarIni();
 
-    box.append(
-      h('h2', null, edicao ? 'Editar Despesa' : 'Nova Despesa'),
-      h('label', null, 'Nome'), nome,
-      h('label', null, 'Valor em Reais'), valor, previa,
-      h('label', null, 'Parcelas (Opcional)'), parc,
-      grupoIni,
-      h('div', { class: 'acoes' },
-        h('button', { class: 'btn med cinza', onclick: fechar }, 'Cancelar'),
-        h('button', {
-          class: 'btn med',
-          onclick: () => {
-            atualizar();
-            let total = Math.min(inteiro(parc.value), 120);
-            let inicio = inteiro(ini.value);
-            if (total >= 2) {
-              if (inicio < 1) inicio = 1;
-              if (inicio > total) { aviso(`${edicao ? 'A Parcela Atual' : 'A Parcela Inicial'} Não Pode Passar de ${total}`); return; }
-            } else {
-              total = 0;
-            }
-            const nm = nome.value.trim();
-            if (edicao) editarDespesa(editar, nm, val, total, inicio);
-            else criarDespesa(nm, val, total, inicio);
-            fechar();
-          },
-        }, edicao ? 'Salvar' : 'Adicionar')),
-    );
-  });
+  folha(edicao ? 'Editar Despesa' : 'Nova Despesa', edicao ? 'Salvar' : 'Adicionar',
+    (corpo) => corpo.append(
+      grupo(lin('Nome', nome), lin('Valor em Reais', valor)),
+      rodape(previa),
+      grupo(lin('Parcelas', parc), linIni),
+      rodape('Com parcelas, os próximos meses já são preenchidos.')),
+    () => {
+      atualizar();
+      let total = Math.min(inteiro(parc.value), 120);
+      let inicio = inteiro(ini.value);
+      if (total >= 2) {
+        if (inicio < 1) inicio = 1;
+        if (inicio > total) { aviso(`${edicao ? 'A Parcela Atual' : 'A Parcela Inicial'} Não Pode Passar de ${total}`); return false; }
+      } else {
+        total = 0;
+      }
+      const nm = nome.value.trim();
+      if (edicao) editarDespesa(editar, nm, val, total, inicio);
+      else criarDespesa(nm, val, total, inicio);
+      return true;
+    });
 }
 
 // Cria a despesa no mês atual; com parcelas, já preenche os meses seguintes
@@ -312,8 +328,6 @@ function trazer(y, m) {
 
 const el = {};
 
-const PONTOS = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="5" r="2.2" fill="#fff"/><circle cx="12" cy="12" r="2.2" fill="#fff"/><circle cx="12" cy="19" r="2.2" fill="#fff"/></svg>';
-
 function montar() {
   const app = document.getElementById('app');
   el.mes = h('div', { class: 'mes' });
@@ -323,18 +337,17 @@ function montar() {
   el.conteudo = h('div', { class: 'conteudo' });
   el.lista = h('div', { class: 'lista' }, el.conteudo);
   el.barra = h('div', { class: 'barra' });
-  const menu = h('button', { class: 'gear', 'aria-label': 'Configurações', onclick: abrirConfig });
-  menu.innerHTML = PONTOS;
 
   app.append(
-    h('div', { class: 'topo' },
-      h('div', { class: 'navwrap' },
-        h('div', { class: 'nav' },
-          h('button', { 'aria-label': 'Mês Anterior', onclick: () => mudarMes(-1) }, '◀'),
-          el.mes,
-          h('button', { 'aria-label': 'Próximo Mês', onclick: () => mudarMes(1) }, '▶')),
-        menu),
-      h('div', { class: 'rotulo' }, '💰 TOTAL A PAGAR'),
+    h('div', { class: 'nav' },
+      h('button', { class: 'nav-ico', 'aria-label': 'Configurações', onclick: abrirConfig }, icone(RETICENCIAS)),
+      h('div', { class: 'nav-mes' },
+        h('button', { class: 'nav-ico chev', 'aria-label': 'Mês Anterior', onclick: () => mudarMes(-1) }, icone(CHEV_E)),
+        el.mes,
+        h('button', { class: 'nav-ico chev', 'aria-label': 'Próximo Mês', onclick: () => mudarMes(1) }, icone(CHEV_D))),
+      h('div', { class: 'nav-esp' })),
+    h('div', { class: 'resumo' },
+      h('div', { class: 'rotulo' }, 'Total a Pagar'),
       el.total,
       h('div', { class: 'progresso' }, el.pago, el.resto)),
     h('div', { class: 'titulos' }, h('div', null, 'Despesa'), h('div', null, 'Valor'), h('div', null, 'Status'), h('div')),
@@ -468,7 +481,7 @@ function ajustarFonte(elemento, n) {
   elemento.style.fontSize = n > 12 ? '11px' : n > 10 ? '13px' : n > 9 ? '14px' : '';
 }
 
-/* ---------- configurações ---------- */
+/* ---------- configurações (estilo Ajustes do iPhone) ---------- */
 
 let pagina = null;
 
@@ -484,8 +497,11 @@ function fecharConfig() {
   render();
 }
 
+function secao(titulo, grupoEl, rodapeTxt) {
+  return h('div', { class: 'secao' }, h('div', { class: 'secao-tit' }, titulo), grupoEl, rodapeTxt && rodape(rodapeTxt));
+}
+
 function paleta(titulo, chave) {
-  const c = h('div', { class: 'cartao' }, h('div', { class: 'tit' }, titulo));
   const linhaCores = h('div', { class: 'cores' });
   PAL[chave].forEach((cores, i) => {
     linhaCores.append(h('button', {
@@ -495,49 +511,47 @@ function paleta(titulo, chave) {
       onclick: () => { db.config[chave] = i; salvar(); aplicarTema(); renderConfig(); },
     }, db.config[chave] === i ? '✓' : ''));
   });
-  c.append(linhaCores);
-  return c;
+  return h('div', { class: 'celula' }, h('div', { class: 'rot' }, titulo), linhaCores);
 }
 
+function segmentado() {
+  const ops = [['auto', 'Automático'], ['claro', 'Claro'], ['escuro', 'Escuro']];
+  return h('div', { class: 'seg' }, ...ops.map(([k, t]) => h('button', {
+    class: db.config.tema === k ? 'sel' : '',
+    onclick: () => { db.config.tema = k; salvar(); aplicarTema(); renderConfig(); },
+  }, t)));
+}
+
+const linhaBotao = (rotulo, onclick, cls) =>
+  h('button', { class: 'lin-btn ' + (cls || ''), onclick }, h('span', null, rotulo), cls === 'chevron' ? icone(CHEV_D) : null);
+
 function renderConfig() {
-  const topo = h('div', { class: 'topo' },
-    h('div', { class: 'navwrap' },
-      h('button', { class: 'gear', 'aria-label': 'Voltar', onclick: fecharConfig }, '◀'),
-      h('div', { class: 'tt' }, 'Configurações')));
-
-  const sw = h('button', {
-    class: 'sw' + (db.config.escuro ? ' on' : ''), role: 'switch', 'aria-checked': String(db.config.escuro), 'aria-label': 'Tema Escuro',
-    onclick: () => { db.config.escuro = !db.config.escuro; salvar(); aplicarTema(); renderConfig(); },
-  });
-
   const arquivo = h('input', { type: 'file', accept: '.json,application/json,text/plain', style: 'display:none' });
   arquivo.addEventListener('change', () => { if (arquivo.files[0]) importar(arquivo.files[0]); arquivo.value = ''; });
 
   pagina.replaceChildren(
-    topo,
-    h('div', { class: 'cartao' }, h('div', { class: 'linha-sw' }, h('div', { class: 'tit' }, '🌙 Tema Escuro'), sw)),
-    paleta('🎨 Cor das Despesas A PAGAR', 'apagar'),
-    paleta('🎨 Cor das Despesas PAGO', 'pago'),
-    paleta('🎨 Cor do Botão + Despesa', 'botao'),
-    h('div', { class: 'cartao' },
-      h('div', { class: 'tit' }, '📄 Relatório do Mês'),
-      h('div', { class: 'desc' }, 'Gera um Relatório Detalhado das Despesas de um Mês, para Salvar em PDF ou Imprimir.'),
-      h('button', { class: 'btn', onclick: escolherMesRelatorio }, 'Gerar Relatório do Mês')),
-    h('div', { class: 'cartao' },
-      h('div', { class: 'tit' }, '💾 Backup'),
-      h('div', { class: 'desc' }, 'Exporte as Despesas para um Arquivo ou Importe o Arquivo Gerado pelo App Android.'),
-      h('button', { class: 'btn copiar', onclick: exportar }, 'Exportar Dados'),
-      h('button', { class: 'btn', onclick: () => arquivo.click() }, 'Importar Dados'),
-      arquivo),
-    h('div', { class: 'cartao', style: 'background:none;box-shadow:none;padding:0' },
-      h('button', {
-        class: 'btn',
-        onclick: () => { db.config = Object.assign({}, PADRAO); salvar(); aplicarTema(); renderConfig(); },
-      }, 'Restaurar Padrão'),
-      h('button', { class: 'btn cinza', onclick: () => atualizarApp(true) }, 'Atualizar o App')),
-    h('div', { class: 'versao' }, `Versão ${VERSAO_APP}`),
-    h('div', { class: 'fundo-pagina' }),
-  );
+    h('div', { class: 'nav' },
+      h('button', { class: 'voltar', onclick: fecharConfig }, icone(CHEV_E), h('span', null, 'Voltar')),
+      h('div', { class: 'nav-esp' })),
+    h('div', { class: 'corpo-pg' },
+      h('h1', { class: 'grande' }, 'Configurações'),
+      secao('Aparência', grupo(
+        h('div', { class: 'celula' }, h('div', { class: 'rot' }, 'Tema'), segmentado()),
+        paleta('Cor das Despesas A PAGAR', 'apagar'),
+        paleta('Cor das Despesas PAGO', 'pago'),
+        paleta('Cor do Botão + Despesa', 'botao'))),
+      secao('Relatório', grupo(linhaBotao('Gerar Relatório do Mês', escolherMesRelatorio, 'chevron')),
+        'Gera um Relatório Detalhado das Despesas de um Mês, para Salvar em PDF ou Imprimir.'),
+      secao('Backup', grupo(
+        linhaBotao('Exportar Dados', exportar),
+        linhaBotao('Importar Dados', () => arquivo.click())),
+        'Exporte as Despesas para um Arquivo ou Importe o Arquivo Gerado pelo App Android.'),
+      arquivo,
+      secao('Aplicativo', grupo(
+        linhaBotao('Atualizar o App', () => atualizarApp(true)),
+        linhaBotao('Restaurar Padrão', () => opcoes('Restaurar o Tema e as Cores Padrão?', ['Restaurar', 'Cancelar'],
+          [() => { db.config = Object.assign({}, PADRAO); salvar(); aplicarTema(); renderConfig(); }, null]), 'perigo')),
+        `Versão ${VERSAO_APP}`)));
 }
 
 /* ---------- backup ---------- */
@@ -549,7 +563,7 @@ function montarBackup() {
     versao: 1,
     exportadoEm: new Date().toISOString().slice(0, 19),
     meses: db.meses,
-    config: { tema_escuro: c.escuro, cor_apagar: c.apagar, cor_pago: c.pago, cor_botao: c.botao },
+    config: { tema_escuro: c.tema === 'escuro', tema: c.tema, cor_apagar: c.apagar, cor_pago: c.pago, cor_botao: c.botao },
   };
 }
 
@@ -593,7 +607,7 @@ function lerBackup(txt) {
   const c = o.config || {};
   const idx = (v, n) => (Number.isInteger(v) && v >= 0 && v < n ? v : 0);
   const config = {
-    escuro: !!c.tema_escuro,
+    tema: ['auto', 'claro', 'escuro'].includes(c.tema) ? c.tema : (c.tema_escuro ? 'escuro' : 'auto'),
     apagar: idx(c.cor_apagar, PAL.apagar.length),
     pago: idx(c.cor_pago, PAL.pago.length),
     botao: idx(c.cor_botao, PAL.botao.length),
@@ -624,25 +638,13 @@ function importar(arquivo) {
 /* ---------- relatório do mês ---------- */
 
 function escolherMesRelatorio() {
-  modal((box, fechar) => {
-    const sel = { m: mes, a: ano };
-    const tvMes = h('div', { class: 'sel-valor' }, MESES[sel.m]);
-    const tvAno = h('div', { class: 'sel-valor' }, String(sel.a));
-    const seletor = (rotulo, tv, menos, mais) => h('div', null,
-      h('label', null, rotulo),
-      h('div', { class: 'seletor' }, h('button', { onclick: menos }, '◀'), tv, h('button', { onclick: mais }, '▶')));
-    box.append(
-      h('h2', null, 'Gerar Relatório'),
-      seletor('Mês', tvMes,
-        () => { sel.m = (sel.m + 11) % 12; tvMes.textContent = MESES[sel.m]; },
-        () => { sel.m = (sel.m + 1) % 12; tvMes.textContent = MESES[sel.m]; }),
-      seletor('Ano', tvAno,
-        () => { if (sel.a > 2000) sel.a--; tvAno.textContent = String(sel.a); },
-        () => { if (sel.a < 2100) sel.a++; tvAno.textContent = String(sel.a); }),
-      h('div', { class: 'acoes' },
-        h('button', { class: 'btn med cinza', onclick: fechar }, 'Cancelar'),
-        h('button', { class: 'btn med', onclick: () => { fechar(); abrirRelatorio(sel.a, sel.m); } }, 'Gerar')));
-  });
+  const selMes = h('select', null, ...MESES.map((m, i) => h('option', { value: i }, m)));
+  const selAno = h('select', null, ...Array.from({ length: 101 }, (_, i) => 2000 + i).map((a) => h('option', { value: a }, String(a))));
+  selMes.value = String(mes);
+  selAno.value = String(ano);
+  folha('Gerar Relatório', 'Gerar',
+    (corpo) => corpo.append(grupo(lin('Mês', selMes), lin('Ano', selAno))),
+    () => { abrirRelatorio(inteiro(selAno.value), inteiro(selMes.value)); return true; });
 }
 
 function dadosRelatorio(a, m) {
@@ -666,25 +668,25 @@ const escHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 function abrirRelatorio(a, m) {
   const r = dadosRelatorio(a, m);
   if (!r.qtd) { aviso(`Não Há Despesas em ${MESES[m]} de ${a}`); return; }
-  const folha = h('div', { class: 'folha' });
-  folha.innerHTML =
+  const folhaEl = h('div', { class: 'folha' });
+  folhaEl.innerHTML =
     `<h1>Relatório de Despesas</h1><div class="sub">${r.titulo} &nbsp;•&nbsp; Gerado em ${r.geradoEm}</div>` +
-    `<div class="resumo"><div class="t">TOTAL DO MÊS (${r.qtd} ${r.qtd === 1 ? 'Despesa' : 'Despesas'})</div><div class="v">${r.total}</div></div>` +
+    `<div class="resumo-rel"><div class="t">TOTAL DO MÊS (${r.qtd} ${r.qtd === 1 ? 'Despesa' : 'Despesas'})</div><div class="v">${r.total}</div></div>` +
     '<table><thead><tr><th class="n">#</th><th>Despesa</th><th class="c">Parcela</th><th class="r">Valor</th></tr></thead><tbody>' +
     r.linhas.map((l, i) => `<tr><td class="n">${i + 1}</td><td>${escHtml(l.nome)}</td><td class="c">${l.parcela}</td><td class="r">${l.valor}</td></tr>`).join('') +
     `</tbody><tfoot><tr><td></td><td colspan="2">TOTAL DO MÊS</td><td class="r">${r.total}</td></tr></tfoot></table>` +
     '<div class="rod">Contas — Controle Financeiro</div>';
 
   const pag = h('div', { class: 'pagina rel' },
-    h('div', { class: 'topo' },
-      h('div', { class: 'navwrap' },
-        h('button', { class: 'gear', 'aria-label': 'Voltar', onclick: () => pag.remove() }, '◀'),
-        h('div', { class: 'tt' }, 'Relatório'))),
-    h('div', { class: 'rel-acoes' },
-      h('button', { class: 'btn med', onclick: () => salvarPdf(r) }, 'Salvar em PDF'),
-      h('button', { class: 'btn med copiar', onclick: () => window.print() }, 'Imprimir')),
-    folha,
-    h('div', { class: 'fundo-pagina' }));
+    h('div', { class: 'nav' },
+      h('button', { class: 'voltar', onclick: () => pag.remove() }, icone(CHEV_E), h('span', null, 'Voltar')),
+      h('div', { class: 'nav-esp' })),
+    h('div', { class: 'corpo-pg' },
+      h('h1', { class: 'grande' }, 'Relatório'),
+      h('div', { class: 'rel-acoes' },
+        h('button', { class: 'btn', onclick: () => salvarPdf(r) }, 'Salvar em PDF'),
+        h('button', { class: 'btn copiar', onclick: () => window.print() }, 'Imprimir')),
+      folhaEl));
   document.body.append(pag);
 }
 
