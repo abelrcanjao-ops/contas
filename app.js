@@ -2,7 +2,7 @@
 /* Contas — controle de despesas por mês (PWA, visual iOS). Dados salvos só neste aparelho (localStorage). */
 
 // Versão do app: mudar aqui e em version.json a cada publicação
-const VERSAO_APP = '8';
+const VERSAO_APP = '9';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -340,6 +340,7 @@ function montar() {
   el.barra = h('div', { class: 'barra' });
 
   app.append(
+    h('div', { class: 'safe-top' }),
     h('div', { class: 'nav' },
       h('button', { class: 'nav-ico', 'aria-label': 'Configurações', onclick: abrirConfig }, icone(RETICENCIAS)),
       h('div', { class: 'nav-mes' },
@@ -531,6 +532,7 @@ function renderConfig() {
   arquivo.addEventListener('change', () => { if (arquivo.files[0]) importar(arquivo.files[0]); arquivo.value = ''; });
 
   pagina.replaceChildren(
+    h('div', { class: 'safe-top' }),
     h('div', { class: 'nav' },
       h('button', { class: 'voltar', onclick: fecharConfig }, icone(CHEV_E), h('span', null, 'Voltar')),
       h('div', { class: 'nav-esp' })),
@@ -679,6 +681,7 @@ function abrirRelatorio(a, m) {
     '<div class="rod">Contas — Controle Financeiro</div>';
 
   const pag = h('div', { class: 'pagina rel' },
+    h('div', { class: 'safe-top' }),
     h('div', { class: 'nav' },
       h('button', { class: 'voltar', onclick: () => pag.remove() }, icone(CHEV_E), h('span', null, 'Voltar')),
       h('div', { class: 'nav-esp' })),
