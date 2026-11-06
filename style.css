@@ -27,7 +27,7 @@ input, select { font: inherit; color: inherit; }
 
 /* barra de navegação: a faixa da área segura (relógio/ilha) é um elemento separado, para o
    texto da barra não ficar colado na borda de cima (o iOS borra o que fica ali) */
-.safe-top { flex: none; height: env(safe-area-inset-top); background: var(--bg); }
+.safe-top { flex: none; height: calc(env(safe-area-inset-top) + 24px); background: var(--bg); } /* teste: interface 24px mais para baixo */
 .nav {
   flex: none; display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; z-index: 3;
   padding: 0 4px; height: 44px; background: var(--bg); border-bottom: .5px solid var(--sep);
