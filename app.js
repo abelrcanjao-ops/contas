@@ -2,7 +2,7 @@
 /* Contas — controle de despesas por mês (PWA, visual iOS). Dados salvos só neste aparelho (localStorage). */
 
 // Versão do app: mudar aqui e em version.json a cada publicação
-const VERSAO_APP = '6';
+const VERSAO_APP = '7';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 

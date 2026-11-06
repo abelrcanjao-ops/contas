@@ -3,7 +3,7 @@
 :root {
   --bg: #F2F2F7; --card: #FFFFFF; --label: #000000; --sec: rgba(60,60,67,.6); --ter: rgba(60,60,67,.3);
   --sep: rgba(60,60,67,.29); --fill: rgba(120,120,128,.12); --tint: #007AFF; --red: #FF3B30; --green: #34C759;
-  --bar: rgba(249,249,249,.86); --sheet: #F2F2F7; --sheet-card: #FFFFFF; --as: rgba(250,250,252,.96);
+  --bar: #F9F9F9; --sheet: #F2F2F7; --sheet-card: #FFFFFF; --as: #F2F2F7;
   --ap: linear-gradient(90deg, #FF6B62, #FF3B30, #D92B20);
   --pg: linear-gradient(90deg, #5FDB7F, #34C759, #248A3D);
   --bt: linear-gradient(90deg, #3D9AFF, #007AFF);
@@ -13,7 +13,7 @@
 :root[data-theme="dark"] {
   --bg: #000000; --card: #1C1C1E; --label: #FFFFFF; --sec: rgba(235,235,245,.6); --ter: rgba(235,235,245,.3);
   --sep: rgba(84,84,88,.65); --fill: rgba(120,120,128,.24); --tint: #0A84FF; --red: #FF453A; --green: #30D158;
-  --bar: rgba(22,22,24,.86); --sheet: #1C1C1E; --sheet-card: #2C2C2E; --as: rgba(44,44,46,.96);
+  --bar: #161618; --sheet: #1C1C1E; --sheet-card: #2C2C2E; --as: #2C2C2E;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -29,7 +29,7 @@ input, select { font: inherit; color: inherit; }
 .nav {
   flex: none; display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; z-index: 3;
   padding: env(safe-area-inset-top) 4px 0; height: calc(44px + env(safe-area-inset-top));
-  background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  background: var(--bar); border-bottom: .5px solid var(--sep);
 }
 .nav-ico { height: 44px; min-width: 44px; color: var(--tint); display: flex; align-items: center; justify-content: center; }
 .nav-mes { display: flex; align-items: center; justify-content: center; }
@@ -75,7 +75,7 @@ input, select { font: inherit; color: inherit; }
 /* barra inferior */
 .barra {
   flex: none; display: flex; gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); z-index: 2;
-  background: var(--bar); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  background: var(--bar);
   border-top: .5px solid var(--sep);
 }
 .btn { flex: 1; height: 50px; border-radius: 14px; color: #fff; font-weight: 600; background: var(--bt); }
@@ -114,7 +114,7 @@ input, select { font: inherit; color: inherit; }
 /* menu de ações (action sheet) */
 .as-ov { align-items: flex-end; }
 .as { width: calc(100% - 16px); max-width: 420px; margin: 0 8px calc(8px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; animation: sobe .3s cubic-bezier(.2,.9,.25,1); }
-.as-grupo { background: var(--as); border-radius: 14px; overflow: hidden; -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); }
+.as-grupo { background: var(--as); border-radius: 14px; overflow: hidden; }
 .as-msg { padding: 16px 20px; text-align: center; color: var(--sec); font-size: 13px; font-weight: 600; line-height: 1.4; }
 .as-btn { display: block; width: 100%; height: 60px; font-size: 20px; color: var(--tint); background: transparent; border-top: .5px solid var(--sep); }
 .as-btn:active { background: var(--fill); }
@@ -161,7 +161,7 @@ h1.grande { font: 700 34px/1.15 var(--fonte); letter-spacing: -.01em; margin: 6p
 .folha .rod { margin-top: 18px; color: #90A4AE; font-size: 11px; text-align: center; }
 
 /* aviso (como o HUD do iOS) */
-.aviso { position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: rgba(60,60,62,.92); color: #fff; padding: 12px 20px; border-radius: 14px; z-index: 40; max-width: 88vw; text-align: center; font-size: 15px; -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); animation: esmaece .2s ease; }
+.aviso { position: fixed; left: 50%; bottom: calc(110px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #3A3A3C; color: #fff; padding: 12px 20px; border-radius: 14px; z-index: 40; max-width: 88vw; text-align: center; font-size: 15px; animation: esmaece .2s ease; }
 
 @keyframes esmaece { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sobe { from { transform: translateY(100%); } to { transform: translateY(0); } }
