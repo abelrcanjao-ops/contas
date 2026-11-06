@@ -2,7 +2,7 @@
 /* Contas — controle de despesas por mês (PWA, visual iOS). Dados salvos só neste aparelho (localStorage). */
 
 // Versão do app: mudar aqui e em version.json a cada publicação
-const VERSAO_APP = '7';
+const VERSAO_APP = '8';
 
 const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -10,7 +10,8 @@ const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julh
 const PAL = {
   apagar: [['#FF6B62', '#FF3B30', '#D92B20'], ['#FFB340', '#FF9500', '#C93400'], ['#FF7AA8', '#FF2D55', '#C20E3A'], ['#C77DFF', '#AF52DE', '#7B2EA8'], ['#98989D', '#636366', '#3A3A3C']],
   pago: [['#5FDB7F', '#34C759', '#248A3D'], ['#5AB8FF', '#007AFF', '#0A4FB5'], ['#5AD6D2', '#30B0C7', '#1F7A8C'], ['#A6E05A', '#7CB342', '#4A7A1F'], ['#7D7AFF', '#5856D6', '#3634A3']],
-  botao: [['#3D9AFF', '#007AFF'], ['#C77DFF', '#8E3FD1'], ['#FF6B62', '#FF3B30'], ['#FFB340', '#FF9500'], ['#98989D', '#48484A']],
+  // mesma ordem do app Android (Rosa, Roxo, Azul, Laranja, Grafite); o padrão é o azul do iOS
+  botao: [['#FF7A93', '#FF2D55'], ['#C77DFF', '#8E3FD1'], ['#3D9AFF', '#007AFF'], ['#FFB340', '#FF9500'], ['#98989D', '#48484A']],
 };
 
 /* ---------- utilitários ---------- */
@@ -65,7 +66,7 @@ function aviso(txt) {
 /* ---------- dados ---------- */
 
 const STORE = 'contas.v1';
-const PADRAO = { tema: 'auto', apagar: 0, pago: 0, botao: 0 };
+const PADRAO = { tema: 'auto', apagar: 0, pago: 0, botao: 2 };
 let db = lerDb();
 
 function lerDb() {
@@ -610,7 +611,7 @@ function lerBackup(txt) {
     tema: ['auto', 'claro', 'escuro'].includes(c.tema) ? c.tema : (c.tema_escuro ? 'escuro' : 'auto'),
     apagar: idx(c.cor_apagar, PAL.apagar.length),
     pago: idx(c.cor_pago, PAL.pago.length),
-    botao: idx(c.cor_botao, PAL.botao.length),
+    botao: Number.isInteger(c.cor_botao) && c.cor_botao >= 0 && c.cor_botao < PAL.botao.length ? c.cor_botao : PADRAO.botao,
   };
   return { meses, config };
 }
