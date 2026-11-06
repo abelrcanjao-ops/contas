@@ -1,8 +1,8 @@
 // Service worker: deixa o app funcionar offline (cache dos arquivos do app).
-const VERSAO = 'contas-v10';
+const VERSAO = 'contas-v11';
 const ARQUIVOS = [
   './', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'
+  'icons/icon-v2-192.png', 'icons/icon-v2-512.png', 'icons/apple-touch-icon-v2.png'
 ];
 
 self.addEventListener('install', (e) => {
